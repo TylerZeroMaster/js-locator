@@ -30,20 +30,35 @@ function assertValue<T>(
 }
 
 function filterSelector(elements: Iterable<Element>, options: LocatorOptions) {
-  const conditions: Array<(el: Element) => boolean> = [];
+  let filtered = elements;
   if (options.hasText !== undefined) {
-    conditions.push(createTextMatcher(options.hasText, (el) => el.textContent));
+    filtered = filter(
+      filtered,
+      createTextMatcher(options.hasText, (el) => el.textContent),
+    );
   }
   if (options.hasNotText !== undefined) {
-    const matcher = createTextMatcher(
+    const textMatcher = createTextMatcher(
       options.hasNotText,
       (el) => el.textContent,
     );
-    conditions.push((el) => !matcher(el));
+    filtered = filter(filtered, (el) => !textMatcher(el));
   }
-  return filter(elements, (el) =>
-    conditions.every((condition) => condition(el)),
-  );
+  if (options.has !== undefined) {
+    const testLocator = options.has;
+    filtered = filter(
+      filtered,
+      (el) => testLocator.withRoot(el).collect().length > 0,
+    );
+  }
+  if (options.hasNot !== undefined) {
+    const testLocator = options.hasNot;
+    filtered = filter(
+      filtered,
+      (el) => testLocator.withRoot(el).collect().length === 0,
+    );
+  }
+  return filtered;
 }
 
 function createTextMatcher(
@@ -60,16 +75,6 @@ function createTextMatcher(
       return value != null && pattern.test(value);
     };
   }
-}
-
-function* intersect<T>(lhs: Iterable<T>, rhs: Iterable<T>) {
-  const other = new Set(rhs);
-  return filter(lhs, other.has);
-}
-
-function* exclusion<T>(lhs: Iterable<T>, rhs: Iterable<T>) {
-  const other = new Set(rhs);
-  return filter(lhs, (item) => !other.has(item));
 }
 
 function* filter<T>(it: Iterable<T>, condition: (x: T) => boolean) {
@@ -98,7 +103,7 @@ function getByTagNameSelector(
 ) {
   return filter(
     elements,
-    createTextMatcher(tagName, (el) => el.tagName, options),
+    createTextMatcher(tagName, (el) => el.tagName.toLocaleLowerCase(), options),
   );
 }
 
@@ -192,19 +197,19 @@ class Locator {
     private readonly page: Page,
     private readonly selector: string | Iterable<Element>,
     private readonly options?: LocatorOptions,
+    private readonly root: Document | Element = page.document,
   ) {}
+
+  withRoot(root: Document | Element) {
+    return new Locator(this.page, this.selector, this.options, root);
+  }
 
   private get valueRaw(): Iterable<Element> {
     if (typeof this.selector === 'string') {
-      return this.page.document.querySelectorAll(this.selector);
+      return this.root.querySelectorAll(this.selector);
     } else {
       return this.selector;
     }
-  }
-
-  private async withSlowdown<T>(thunk: () => T) {
-    await this.page.slowdown();
-    return thunk();
   }
 
   unwrap(): Element | undefined {
@@ -218,6 +223,7 @@ class Locator {
   locator(
     selectorOrIterable: string | Iterable<Element>,
     options?: LocatorOptions,
+    root: Document | Element = this.page.document,
   ): Locator {
     return new Locator(
       this.page,
@@ -225,6 +231,7 @@ class Locator {
         ? mapSelector(this.valueRaw, selectorOrIterable)
         : selectorOrIterable,
       options,
+      root,
     );
   }
 
@@ -241,18 +248,7 @@ class Locator {
   }
 
   filter(options: LocatorOptions) {
-    let filterLocator = this.locator(filterSelector(this.valueRaw, options));
-    if (options.has !== undefined) {
-      filterLocator = this.locator(
-        intersect(filterLocator.valueRaw, options.has.valueRaw),
-      );
-    }
-    if (options.hasNot !== undefined) {
-      filterLocator = this.locator(
-        exclusion(filterLocator.valueRaw, options.hasNot.valueRaw),
-      );
-    }
-    return filterLocator;
+    return this.locator(filterSelector(this.valueRaw, options));
   }
 
   first() {
@@ -273,27 +269,78 @@ class Locator {
     );
   }
 
+  async doActionByTagName<T>(
+    actions: Record<string, (el: Element) => T> &
+      Record<'default', (el: Element) => T>,
+  ) {
+    const element = assertValue(this.unwrap());
+    const action =
+      actions[element.tagName.toLocaleLowerCase()] ?? actions.default;
+    await this.page.slowdown();
+    return action(element);
+  }
+
+  // 'any' types are placeholders
+  async fill(text: string, options?: any) {
+    await this.doActionByTagName({
+      input: (el) => {
+        (el as HTMLInputElement).value = text;
+      },
+      default: (el) => {
+        assertValue(el.querySelector('input')).value = text;
+      },
+    });
+  }
+
+  async check(value: boolean = true, options?: any) {
+    await this.doActionByTagName({
+      input: (el) => {
+        (el as HTMLInputElement).checked = value;
+      },
+      default: (el) => {
+        assertValue(el.querySelector('input')).checked = true;
+      },
+    });
+  }
+
+  async focus(options?: any) {
+    await this.doActionByTagName({
+      input: (el) => {
+        (el as HTMLInputElement).focus();
+      },
+      default: (el) => {
+        assertValue(el.querySelector('input')).focus();
+      },
+    });
+  }
+
+  async uncheck(options?: any) {
+    await this.check(false, options);
+  }
+
   async click(options?: any) {
-    await this.withSlowdown(() => {
-      assertValue(this.unwrap()).dispatchEvent(
-        new MouseEvent('click', {
-          view: window,
-          bubbles: true,
-          cancelable: true,
-        }),
-      );
+    await this.doActionByTagName({
+      default: (el) =>
+        el.dispatchEvent(
+          new MouseEvent('click', {
+            view: window,
+            bubbles: true,
+            cancelable: true,
+          }),
+        ),
     });
   }
 
   async dblclick(options?: any) {
-    await this.withSlowdown(() => {
-      assertValue(this.unwrap()).dispatchEvent(
-        new MouseEvent('dblclick', {
-          view: window,
-          bubbles: true,
-          cancelable: true,
-        }),
-      );
+    await this.doActionByTagName({
+      default: (el) =>
+        el.dispatchEvent(
+          new MouseEvent('dblclick', {
+            view: window,
+            bubbles: true,
+            cancelable: true,
+          }),
+        ),
     });
   }
 }
