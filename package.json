@@ -1,0 +1,18 @@
+{
+  "name": "locator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "npx esbuild locator.ts --target=chrome58,firefox57,safari11,edge16 --outfile=browser-ready.js",
+    "format": "npx prettier --write ."
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "prettier": "^3.1.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.19.5"
+  }
+}
