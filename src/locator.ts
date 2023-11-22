@@ -187,12 +187,11 @@ export class Locator {
   constructor(
     private readonly page: Page,
     private readonly selector: string | Iterable<Element>,
-    private readonly options?: LocatorOptions,
     private readonly root: Document | Element = page.document,
   ) {}
 
   withRoot(root: Document | Element) {
-    return new Locator(this.page, this.selector, this.options, root);
+    return new Locator(this.page, this.selector, root);
   }
 
   private get valueRaw(): Iterable<Element> {
@@ -213,7 +212,6 @@ export class Locator {
 
   locator(
     selectorOrIterable: string | Iterable<Element>,
-    options?: LocatorOptions,
     root: Document | Element = this.page.document,
   ): Locator {
     return new Locator(
@@ -221,7 +219,6 @@ export class Locator {
       typeof selectorOrIterable === 'string'
         ? mapSelector(this.valueRaw, selectorOrIterable)
         : selectorOrIterable,
-      options,
       root,
     );
   }
