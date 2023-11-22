@@ -4,15 +4,19 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "npx esbuild locator.ts --target=chrome58,firefox57,safari11,edge16 --outfile=browser-ready.js",
-    "format": "npx prettier --write ."
+    "build": "mkdir -p ./out && npx esbuild ./src/locator.ts --minify --target=chrome58,firefox57,safari11,edge16 --outfile=out/browser-ready.js",
+    "format": "npx prettier --write .",
+    "test": "npx jest"
   },
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "prettier": "^3.1.0"
-  },
   "devDependencies": {
-    "esbuild": "0.19.5"
+    "@types/jest": "^29.5.10",
+    "@types/node": "^20.9.4",
+    "esbuild": "0.19.5",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "prettier": "^3.1.0",
+    "ts-jest": "^29.1.1"
   }
 }

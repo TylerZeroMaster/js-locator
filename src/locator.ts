@@ -26,6 +26,7 @@ function assertValue<T>(
   message: string = 'Expected value, got nothing',
 ) {
   if (value != null) return value;
+  /* istanbul ignore next */
   throw new Error(message);
 }
 
@@ -96,29 +97,6 @@ function getByTextSelector(
   );
 }
 
-function getByTagNameSelector(
-  elements: Iterable<Element>,
-  tagName: string | RegExp,
-  options?: { exact?: boolean },
-) {
-  return filter(
-    elements,
-    createTextMatcher(tagName, (el) => el.tagName.toLocaleLowerCase(), options),
-  );
-}
-
-function getByLabelSelector(
-  elements: Iterable<Element>,
-  text: string | RegExp,
-  options?: { exact?: boolean },
-) {
-  return getByTextSelector(
-    getByTagNameSelector(elements, 'label'),
-    text,
-    options,
-  );
-}
-
 function getByRoleSelector(
   elements: Iterable<Element>,
   role: string | RegExp,
@@ -126,7 +104,13 @@ function getByRoleSelector(
 ) {
   const isUndefinedOrEqual = <T>(option: T | undefined, value: T) =>
     option === undefined || option === value;
-  const roleMatcher = createTextMatcher(role, (el) => el.role, options);
+  const roleMatcher = createTextMatcher(
+    role,
+    // According to https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles
+    // inputs should get their type as a role by default, but this does not seem to actually happen...
+    (el) => el.getAttribute('role') || el.getAttribute('type'),
+    options,
+  );
   return filter(elements, (el) => {
     const input = el as HTMLInputElement;
     return (
@@ -162,11 +146,11 @@ function* mapSelector(elements: Iterable<Element>, selector: string) {
   }
 }
 
-class Page {
+export class Page {
   public readonly slowdown: () => Promise<void>;
 
   constructor(
-    private readonly options: PageOptions,
+    options: PageOptions,
     public readonly document = window.document,
   ) {
     this.slowdown =
@@ -175,7 +159,7 @@ class Page {
         : () => Promise.resolve();
   }
 
-  locator(selector: string) {
+  locator(selector: string | Iterable<Element>) {
     return new Locator(this, selector);
   }
 
@@ -184,7 +168,14 @@ class Page {
   }
 
   getByLabel(text: string | RegExp, options?: { exact?: boolean }): Locator {
-    return this.locator('label').getByText(text, options);
+    return this.locator(
+      this.locator('label')
+        .getByText(text, options)
+        .collect()
+        .map((el: HTMLLabelElement) =>
+          this.document.getElementById(el.htmlFor),
+        ),
+    );
   }
 
   getByRole(role: string, options: ByRoleOptions = {}): Locator {
@@ -192,7 +183,7 @@ class Page {
   }
 }
 
-class Locator {
+export class Locator {
   constructor(
     private readonly page: Page,
     private readonly selector: string | Iterable<Element>,
@@ -240,7 +231,14 @@ class Locator {
   }
 
   getByLabel(text: string | RegExp, options?: { exact?: boolean }): Locator {
-    return this.locator(getByLabelSelector(this.valueRaw, text, options));
+    return this.locator(
+      this.locator('label')
+        .getByText(text, options)
+        .collect()
+        .map((el: HTMLLabelElement) =>
+          this.page.document.getElementById(el.htmlFor),
+        ),
+    );
   }
 
   getByRole(role: string, options: ByRoleOptions = {}): Locator {
@@ -261,12 +259,12 @@ class Locator {
 
   nth(index: number) {
     const results = this.collect();
-    return new Locator(
-      this.page,
-      (function* () {
-        yield results[index < 0 ? results.length + index : index];
-      })(),
-    );
+    if (index < 0) index = results.length + index;
+    return new Locator(this.page, results.slice(index, index + 1));
+  }
+
+  parentElement() {
+    return this.locator([this.unwrap().parentElement])
   }
 
   async doActionByTagName<T>(
@@ -305,11 +303,14 @@ class Locator {
 
   async focus(options?: any) {
     await this.doActionByTagName({
-      input: (el) => {
-        (el as HTMLInputElement).focus();
-      },
       default: (el) => {
-        assertValue(el.querySelector('input')).focus();
+        el.dispatchEvent(
+          new FocusEvent('focus', {
+            view: window,
+            bubbles: true,
+            cancelable: true,
+          }),
+        );
       },
     });
   }
