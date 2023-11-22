@@ -9,13 +9,13 @@ function filterSelector(elements: Iterable<Element>, options: LocatorOptions) {
   if (options.hasText !== undefined) {
     filtered = filter(
       filtered,
-      createTextMatcher(options.hasText, (el) => el.textContent),
+      createTextMatcher(options.hasText, (el: Element) => el.textContent),
     );
   }
   if (options.hasNotText !== undefined) {
     const textMatcher = createTextMatcher(
       options.hasNotText,
-      (el) => el.textContent,
+      (el: Element) => el.textContent,
     );
     filtered = filter(filtered, (el) => !textMatcher(el));
   }
@@ -43,7 +43,7 @@ function getByTextSelector(
 ) {
   return filter(
     elements,
-    createTextMatcher(text, (el) => el.textContent, options),
+    createTextMatcher(text, (el: Element) => el.textContent, options),
   );
 }
 
@@ -58,7 +58,7 @@ function getByRoleSelector(
     role,
     // According to https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles
     // inputs should get their type as a role by default, but this does not seem to actually happen...
-    (el) => el.getAttribute('role') || el.getAttribute('type'),
+    (el: Element) => el.getAttribute('role') || el.getAttribute('type'),
     options,
   );
   return filter(elements, (el) => {

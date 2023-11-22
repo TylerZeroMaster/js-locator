@@ -6,17 +6,17 @@ export function assertValue<T>(
   /* istanbul ignore next */
   throw new Error(message);
 }
-export function createTextMatcher(
+export function createTextMatcher<T>(
   text: string | RegExp,
-  key: (el: Element) => string | undefined | null,
+  key: (thing: T) => string | undefined | null,
   options?: { exact?: boolean },
 ) {
   if (options?.exact === true) {
-    return (el) => key(el) === text;
+    return (thing) => key(thing) === text;
   } else {
     const pattern = typeof text === 'string' ? new RegExp(text) : text;
-    return (el) => {
-      const value = key(el);
+    return (thing) => {
+      const value = key(thing);
       return value != null && pattern.test(value);
     };
   }
