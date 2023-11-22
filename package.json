@@ -1,10 +1,10 @@
 {
-  "name": "locator",
+  "name": "js-locator",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "mkdir -p ./out && npx esbuild ./src/locator.ts --minify --target=chrome58,firefox57,safari11,edge16 --outfile=out/browser-ready.js",
+    "build": "mkdir -p ./out && npx esbuild ./src --bundle --minify --target=chrome58,firefox57,safari11,edge16 --outfile=out/browser-ready.js",
     "format": "npx prettier --write .",
     "test": "npx jest"
   },

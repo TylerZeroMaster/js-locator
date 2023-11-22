@@ -1,4 +1,4 @@
-import { Page } from '../src/locator';
+import { Page } from '../src/page';
 
 const testDocument = `
 <!DOCTYPE html>
@@ -202,9 +202,12 @@ describe('Locator', () => {
       const input = el as HTMLInputElement;
       const start = Date.now();
       expect(input.checked).toBe(false);
-      await pageWithSlowmo.locator('#check-action-test').parentElement().check();
+      await pageWithSlowmo
+        .locator('#check-action-test')
+        .parentElement()
+        .check();
       expect(input.checked).toBe(true);
       expect(Date.now() - start).toBeGreaterThan(100);
-    })
-  })
+    });
+  });
 });

@@ -1,34 +1,8 @@
-export type ByRoleOptions = {
-  checked?: boolean;
-  disabled?: boolean;
-  exact?: boolean;
-  expanded?: boolean;
-  includeHidden?: boolean;
-  level?: number;
-  name?: string | RegExp;
-  pressed?: boolean;
-  selected?: boolean;
-};
-
-export type LocatorOptions = {
-  hasText?: string | RegExp;
-  hasNotText?: string | RegExp;
-  has?: Locator;
-  hasNot?: Locator;
-};
-
-export type PageOptions = {
-  slowmo?: number;
-};
-
-function assertValue<T>(
-  value: T | undefined | null,
-  message: string = 'Expected value, got nothing',
-) {
-  if (value != null) return value;
-  /* istanbul ignore next */
-  throw new Error(message);
-}
+import { Page } from './page';
+import { ByRoleOptions, LocatorOptions } from './types';
+import { filter } from './utils';
+import { createTextMatcher } from './utils';
+import { assertValue } from './utils';
 
 function filterSelector(elements: Iterable<Element>, options: LocatorOptions) {
   let filtered = elements;
@@ -60,30 +34,6 @@ function filterSelector(elements: Iterable<Element>, options: LocatorOptions) {
     );
   }
   return filtered;
-}
-
-function createTextMatcher(
-  text: string | RegExp,
-  key: (el: Element) => string | undefined | null,
-  options?: { exact?: boolean },
-) {
-  if (options?.exact === true) {
-    return (el) => key(el) === text;
-  } else {
-    const pattern = typeof text === 'string' ? new RegExp(text) : text;
-    return (el) => {
-      const value = key(el);
-      return value != null && pattern.test(value);
-    };
-  }
-}
-
-function* filter<T>(it: Iterable<T>, condition: (x: T) => boolean) {
-  for (const x of it) {
-    if (condition(x)) {
-      yield x;
-    }
-  }
 }
 
 function getByTextSelector(
@@ -143,43 +93,6 @@ function* mapSelector(elements: Iterable<Element>, selector: string) {
     for (const child of el.querySelectorAll(selector)) {
       yield child;
     }
-  }
-}
-
-export class Page {
-  public readonly slowdown: () => Promise<void>;
-
-  constructor(
-    options: PageOptions,
-    public readonly document = window.document,
-  ) {
-    this.slowdown =
-      options.slowmo !== undefined
-        ? () => new Promise((res, rej) => setTimeout(res, options.slowmo))
-        : () => Promise.resolve();
-  }
-
-  locator(selector: string | Iterable<Element>) {
-    return new Locator(this, selector);
-  }
-
-  getByText(text: string | RegExp, options?: { exact?: boolean }): Locator {
-    return this.locator('*').getByText(text, options);
-  }
-
-  getByLabel(text: string | RegExp, options?: { exact?: boolean }): Locator {
-    return this.locator(
-      this.locator('label')
-        .getByText(text, options)
-        .collect()
-        .map((el: HTMLLabelElement) =>
-          this.document.getElementById(el.htmlFor),
-        ),
-    );
-  }
-
-  getByRole(role: string, options: ByRoleOptions = {}): Locator {
-    return this.locator('*').getByRole(role, options);
   }
 }
 
@@ -261,7 +174,7 @@ export class Locator {
   }
 
   parentElement() {
-    return this.locator([this.unwrap().parentElement])
+    return this.locator([this.unwrap().parentElement]);
   }
 
   async doActionByTagName<T>(
