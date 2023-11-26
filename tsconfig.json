@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
-    "esModuleInterop": true,
-    "target": "ES2015",
+    "target": "ES6",
     "module": "CommonJS",
     "outDir": "out",
     "sourceMap": true,
-    "resolveJsonModule": true
+    "strictNullChecks": true,
+    "noImplicitAny": true,
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules/*", "__sapper__/*", "public/*"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules/*", "out"]
 }

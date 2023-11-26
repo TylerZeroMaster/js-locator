@@ -1,5 +1,6 @@
 import { Locator } from './locator';
 import { ByRoleOptions, PageOptions } from './types';
+import { assertValue } from './utils';
 
 export class Page {
   public readonly slowdown: () => Promise<void>;
@@ -29,7 +30,7 @@ export class Page {
         .getByText(text, options)
         .collect()
         .map((el: HTMLLabelElement) =>
-          this.document.getElementById(el.htmlFor),
+          assertValue(this.document.getElementById(el.htmlFor)),
         ),
     );
   }
