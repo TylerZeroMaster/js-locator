@@ -1,8 +1,15 @@
 import { Page } from './page';
-import { ByRoleOptions, LocatorOptions } from './types';
+import {
+  ByRoleOptions,
+  ElementHandleClickOptions,
+  LocatorOptions,
+  ModifierKeys,
+} from './types';
 import { filter } from './utils';
 import { createTextMatcher } from './utils';
 import { assertValue } from './utils';
+
+const logger = console;
 
 function filterSelector(elements: Iterable<Element>, options: LocatorOptions) {
   let filtered = elements;
@@ -96,6 +103,51 @@ function* mapSelector(elements: Iterable<Element>, selector: string) {
   }
 }
 
+function mouseEventFromClickOptions(
+  options?: ElementHandleClickOptions,
+): MouseEventInit {
+  const modifiers: Partial<Record<ModifierKeys, boolean>> = {};
+  options?.modifiers?.forEach((mod) => (modifiers[mod] = true));
+  const buttonsByName = {
+    left: 0,
+    right: 2,
+    middle: 1,
+  };
+  /* istanbul ignore next */
+  if (options?.timeout !== undefined) {
+    logger.warn('timeout option not supported');
+  }
+  /* istanbul ignore next */
+  if (options?.force !== undefined) {
+    logger.warn('force option not supported');
+  }
+  return {
+    view: window,
+    bubbles: true,
+    cancelable: true,
+    altKey: !!modifiers.Alt,
+    ctrlKey: !!modifiers.Control,
+    metaKey: !!modifiers.Meta,
+    shiftKey: !!modifiers.Shift,
+    button: buttonsByName[options?.button ?? 'left'],
+    clientX: 0,
+    clientY: 0,
+    detail: options?.clickCount ?? 1,
+  };
+}
+
+function mouseEventFromClickOptionsWithPosition(
+  el: Element,
+  options?: ElementHandleClickOptions,
+): MouseEventInit {
+  const box = el.getBoundingClientRect();
+  return {
+    ...mouseEventFromClickOptions(options),
+    clientX: box.x + (options?.position?.x ?? 0),
+    clientY: box.y + (options?.position?.y ?? 0),
+  };
+}
+
 export class Locator {
   constructor(
     private readonly page: Page,
@@ -146,7 +198,7 @@ export class Locator {
         .getByText(text, options)
         .collect()
         .map((el: HTMLLabelElement) =>
-          this.page.document.getElementById(el.htmlFor),
+          assertValue(this.page.document.getElementById(el.htmlFor)),
         ),
     );
   }
@@ -174,7 +226,7 @@ export class Locator {
   }
 
   parentElement() {
-    return this.locator([this.unwrap().parentElement]);
+    return this.locator([assertValue(this.unwrap()?.parentElement)]);
   }
 
   async doActionByTagName<T>(
@@ -211,7 +263,7 @@ export class Locator {
     });
   }
 
-  async focus(options?: any) {
+  async focus() {
     await this.doActionByTagName({
       default: (el) => {
         el.dispatchEvent(
@@ -229,15 +281,14 @@ export class Locator {
     await this.check(false, options);
   }
 
-  async click(options?: any) {
+  async click(options?: ElementHandleClickOptions) {
     await this.doActionByTagName({
       default: (el) =>
         el.dispatchEvent(
-          new MouseEvent('click', {
-            view: window,
-            bubbles: true,
-            cancelable: true,
-          }),
+          new MouseEvent(
+            'click',
+            mouseEventFromClickOptionsWithPosition(el, options),
+          ),
         ),
     });
   }
@@ -246,11 +297,10 @@ export class Locator {
     await this.doActionByTagName({
       default: (el) =>
         el.dispatchEvent(
-          new MouseEvent('dblclick', {
-            view: window,
-            bubbles: true,
-            cancelable: true,
-          }),
+          new MouseEvent(
+            'dblclick',
+            mouseEventFromClickOptionsWithPosition(el, options),
+          ),
         ),
     });
   }

@@ -22,3 +22,22 @@ export type LocatorOptions = {
 export type PageOptions = {
   slowmo?: number;
 };
+
+export type Point = {
+  x: number;
+  y: number;
+};
+
+export type ModifierKeys = 'Alt' | 'Control' | 'Meta' | 'Shift';
+
+export type ElementHandleClickOptions = {
+  force?: boolean;
+  noWaitAfter?: boolean;
+  modifiers?: ModifierKeys[];
+  position?: Point;
+  delay?: number;
+  button?: 'left' | 'right' | 'middle';
+  clickCount?: number;
+  timeout?: number;
+  trial?: boolean;
+};

@@ -13,7 +13,7 @@ const testDocument = `
   <div id="get-by-text">Get me by this text which no other element should contain</div>
   <div id="get-by-has-blockquote"><blockquote></blockquote></div>
   <div id="action-tests">
-    <div><button id="click-action-test" data-clicked="false">Click</button></div>
+    <div><button style="position: absolute; top: 10px; left: 10px;" id="click-action-test" data-clicked="false">Click</button></div>
     <div><input id="fill-action-test" type="text"/></div>
     <div><input id="check-action-test" type="checkbox"/></div>
   </div>
@@ -28,6 +28,16 @@ describe('Locator', () => {
     const parser = new DOMParser();
     document = parser.parseFromString(testDocument, 'text/html');
     Array.from(document.querySelectorAll('*')).forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      const top = parseInt(htmlEl.style.top || '0px');
+      const left = parseInt(htmlEl.style.left || '0px');
+      // jsdom does not support this method, so we mock it here (mostly)
+      el.getBoundingClientRect = jest.fn().mockReturnValue({
+        x: left,
+        y: top,
+        top,
+        left,
+      });
       if (el.id !== '') {
         el.setAttribute('data-value', el.id);
       }
@@ -136,12 +146,19 @@ describe('Locator', () => {
   describe('action methods', () => {
     it('clicks', async () => {
       const button = page.locator('#click-action-test').unwrap();
+      let posX: number, posY: number, shift: boolean;
       expect(button?.getAttribute('data-clicked')).toBe('false');
-      button!.addEventListener('click', function () {
+      button!.addEventListener('click', function (e) {
+        posX = (e as MouseEvent).clientX;
+        posY = (e as MouseEvent).clientY;
+        shift = (e as MouseEvent).shiftKey;
         this.setAttribute('data-clicked', 'true');
       });
       await page.locator('#click-action-test').click();
       expect(button?.getAttribute('data-clicked')).toBe('true');
+      expect(posX!).toBe(10);
+      expect(posY!).toBe(10);
+      expect(shift!).toBe(false);
     });
     it('dblclicks', async () => {
       const button = page.locator('#click-action-test').unwrap();
@@ -151,6 +168,30 @@ describe('Locator', () => {
       });
       await page.locator('#click-action-test').dblclick();
       expect(button?.getAttribute('data-clicked')).toBe('true');
+    });
+    it('clicks with options', async () => {
+      const button = page.locator('#click-action-test').unwrap();
+      let posX: number, posY: number, shift: boolean;
+      expect(button?.getAttribute('data-clicked')).toBe('false');
+      button!.addEventListener('click', function (e) {
+        posX = (e as MouseEvent).clientX;
+        posY = (e as MouseEvent).clientY;
+        shift = (e as MouseEvent).shiftKey;
+        this.setAttribute('data-clicked', 'true');
+      });
+      await page.locator('#click-action-test').click({
+        position: {
+          x: 1,
+          y: 3,
+        },
+        modifiers: ['Shift'],
+      });
+      const box = button?.getBoundingClientRect();
+      expect(box!.x).toBe(10);
+      expect(button?.getAttribute('data-clicked')).toBe('true');
+      expect(posX!).toBe(11);
+      expect(posY!).toBe(13);
+      expect(shift!).toBe(true);
     });
     it('fills and focuses', async () => {
       const el = page.locator('#fill-action-test').unwrap();
