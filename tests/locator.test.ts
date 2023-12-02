@@ -46,25 +46,25 @@ describe('Locator', () => {
   });
   describe('basic selector tests', () => {
     it('gets elements by id', () => {
-      const div = page.locator('#basic-id-test').unwrap();
+      const div = page.locator('#basic-id-test').unwrapSync();
       expect(div).toBeDefined();
       expect(div?.getAttribute('data-value')).toBe('basic-id-test');
     });
     it('gets inputs by label', () => {
-      const input = page.getByLabel('Label Test').unwrap();
+      const input = page.getByLabel('Label Test').unwrapSync();
       expect(input).toBeDefined();
       expect(input?.tagName.toLocaleLowerCase()).toBe('input');
       expect(input?.id).toBe('label-test-id');
     });
     it('gets inputs from form by label', () => {
       const form = page.locator('form');
-      const input = form.getByLabel('Label Test').unwrap();
+      const input = form.getByLabel('Label Test').unwrapSync();
       expect(input).toBeDefined();
       expect(input?.tagName.toLocaleLowerCase()).toBe('input');
       expect(input?.id).toBe('label-test-id');
     });
     it('gets inputs by role', () => {
-      const input = page.getByRole('checkbox').unwrap();
+      const input = page.getByRole('checkbox').unwrapSync();
       expect(input).toBeDefined();
       expect(input?.tagName.toLocaleLowerCase()).toBe('input');
       expect(input?.id).toBe('by-role-test');
@@ -77,7 +77,7 @@ describe('Locator', () => {
           'Get me by this text which no other element should contain',
           { exact: true },
         )
-        .unwrap();
+        .unwrapSync();
       expect(byText).toBeDefined();
       expect(byText?.id).toBe('get-by-text');
     });
@@ -86,14 +86,14 @@ describe('Locator', () => {
       const byText = page
         .getByText('no other element should contain')
         .last()
-        .unwrap();
+        .unwrapSync();
       expect(byText).toBeDefined();
       expect(byText?.id).toBe('get-by-text');
     });
     it('gets elements by regex', () => {
       const byText = page
         .getByText(/^Get me by this text.+?no other.+?contain$/)
-        .unwrap();
+        .unwrapSync();
       expect(byText).toBeDefined();
       expect(byText?.id).toBe('get-by-text');
     });
@@ -104,12 +104,12 @@ describe('Locator', () => {
         .locator('*')
         .filter({ has: page.locator('blockquote') })
         .first()
-        .unwrap();
+        .unwrapSync();
       const el = page
         .locator('*')
         .filter({ has: page.locator('blockquote') })
         .last()
-        .unwrap();
+        .unwrapSync();
       expect(html?.tagName.toLocaleLowerCase()).toBe('html');
       expect(el?.id).toBe('get-by-has-blockquote');
     });
@@ -117,7 +117,7 @@ describe('Locator', () => {
       const hasNotBlockquote = page
         .locator('*')
         .filter({ hasNot: page.locator('blockquote') })
-        .collect();
+        .collectSync();
       expect(hasNotBlockquote.length).toBeGreaterThan(0);
       expect(hasNotBlockquote[0].tagName.toLocaleLowerCase()).not.toBe('html');
       expect(
@@ -128,7 +128,7 @@ describe('Locator', () => {
       const hasText = page
         .locator('*')
         .filter({ hasText: 'Get me by this text' })
-        .collect();
+        .collectSync();
       expect(hasText[0]?.tagName.toLocaleLowerCase()).toBe('html');
       expect(hasText[hasText.length - 1]?.id).toBe('get-by-text');
     });
@@ -136,7 +136,7 @@ describe('Locator', () => {
       const hasNotText = page
         .locator('*')
         .filter({ hasNotText: 'Get me by this text' })
-        .collect();
+        .collectSync();
       expect(hasNotText[0]?.tagName.toLocaleLowerCase()).not.toBe('html');
       expect(
         hasNotText.find((el) => el.id === 'get-by-text'),
@@ -145,7 +145,7 @@ describe('Locator', () => {
   });
   describe('action methods', () => {
     it('clicks', async () => {
-      const button = page.locator('#click-action-test').unwrap();
+      const button = page.locator('#click-action-test').unwrapSync();
       let posX: number, posY: number, shift: boolean;
       expect(button?.getAttribute('data-clicked')).toBe('false');
       button!.addEventListener('click', function (e) {
@@ -161,7 +161,7 @@ describe('Locator', () => {
       expect(shift!).toBe(false);
     });
     it('dblclicks', async () => {
-      const button = page.locator('#click-action-test').unwrap();
+      const button = page.locator('#click-action-test').unwrapSync();
       expect(button?.getAttribute('data-clicked')).toBe('false');
       button!.addEventListener('dblclick', function () {
         this.setAttribute('data-clicked', 'true');
@@ -170,7 +170,7 @@ describe('Locator', () => {
       expect(button?.getAttribute('data-clicked')).toBe('true');
     });
     it('clicks with options', async () => {
-      const button = page.locator('#click-action-test').unwrap();
+      const button = page.locator('#click-action-test').unwrapSync();
       let posX: number, posY: number, shift: boolean;
       expect(button?.getAttribute('data-clicked')).toBe('false');
       button!.addEventListener('click', function (e) {
@@ -194,7 +194,7 @@ describe('Locator', () => {
       expect(shift!).toBe(true);
     });
     it('fills and focuses', async () => {
-      const el = page.locator('#fill-action-test').unwrap();
+      const el = page.locator('#fill-action-test').unwrapSync();
       expect(el).toBeDefined();
       const input = el as HTMLInputElement;
       expect(input.value).toBe('');
@@ -209,7 +209,7 @@ describe('Locator', () => {
       expect(input.getAttribute('data-was-focused')).toBeTruthy();
     });
     it('checks and unchecks', async () => {
-      const el = page.locator('#check-action-test').unwrap();
+      const el = page.locator('#check-action-test').unwrapSync();
       expect(el).toBeDefined();
       const input = el as HTMLInputElement;
       expect(input.checked).toBe(false);
@@ -219,7 +219,7 @@ describe('Locator', () => {
       expect(input.checked).toBe(false);
     });
     it('tries its best to find the text input', async () => {
-      const el = page.locator('#fill-action-test').unwrap();
+      const el = page.locator('#fill-action-test').unwrapSync();
       expect(el).toBeDefined();
       const input = el as HTMLInputElement;
       expect(input.value).toBe('');
@@ -227,7 +227,7 @@ describe('Locator', () => {
       expect(input.value).toBe('test');
     });
     it('tries its best to find the checkbox input', async () => {
-      const el = page.locator('#check-action-test').unwrap();
+      const el = page.locator('#check-action-test').unwrapSync();
       expect(el).toBeDefined();
       const input = el as HTMLInputElement;
       expect(input.checked).toBe(false);
@@ -238,7 +238,7 @@ describe('Locator', () => {
   describe('page slowmo', () => {
     it('waits the specified time', async () => {
       const pageWithSlowmo = new Page({ slowmo: 200 }, document);
-      const el = pageWithSlowmo.locator('#check-action-test').unwrap();
+      const el = pageWithSlowmo.locator('#check-action-test').unwrapSync();
       expect(el).toBeDefined();
       const input = el as HTMLInputElement;
       const start = Date.now();

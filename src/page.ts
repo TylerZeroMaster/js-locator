@@ -28,7 +28,7 @@ export class Page {
     return this.locator(
       this.locator('label')
         .getByText(text, options)
-        .collect()
+        .collectSync()
         .map((el: HTMLLabelElement) =>
           assertValue(this.document.getElementById(el.htmlFor)),
         ),

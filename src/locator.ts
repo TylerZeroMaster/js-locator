@@ -5,7 +5,7 @@ import {
   LocatorOptions,
   ModifierKeys,
 } from './types';
-import { filter } from './utils';
+import { filter, observe, waitFor } from './utils';
 import { createTextMatcher } from './utils';
 import { assertValue } from './utils';
 
@@ -30,14 +30,14 @@ function filterSelector(elements: Iterable<Element>, options: LocatorOptions) {
     const testLocator = options.has;
     filtered = filter(
       filtered,
-      (el) => testLocator.withRoot(el).collect().length > 0,
+      (el) => testLocator.withRoot(el).collectSync().length > 0,
     );
   }
   if (options.hasNot !== undefined) {
     const testLocator = options.hasNot;
     filtered = filter(
       filtered,
-      (el) => testLocator.withRoot(el).collect().length === 0,
+      (el) => testLocator.withRoot(el).collectSync().length === 0,
     );
   }
   return filtered;
@@ -167,12 +167,40 @@ export class Locator {
     }
   }
 
-  unwrap(): Element | undefined {
-    return this.collect()[0];
+  private copy() {
+    return new Locator(this.page, this.selector, this.root);
   }
 
-  collect(): Element[] {
+  unwrapSync(): Element | undefined {
+    return this.collectSync()[0];
+  }
+
+  collectSync(): Element[] {
     return Array.from(this.valueRaw);
+  }
+
+  async collect(options?: { timeout?: number }): Promise<Element[]> {
+    if (options?.timeout === undefined) {
+      return Array.from(this.valueRaw);
+    } else {
+      let result = Array.from(this.copy().valueRaw);
+      return result.length !== 0
+        ? result
+        : waitFor(
+            this.root,
+            (resolve) => () => {
+              const result = Array.from(this.copy().valueRaw);
+              if (result.length !== 0) {
+                resolve(result);
+              }
+            },
+            options.timeout,
+          );
+    }
+  }
+
+  async unwrap(options?: { timeout?: number }): Promise<Element | undefined> {
+    return (await this.collect(options))[0];
   }
 
   locator(
@@ -196,7 +224,7 @@ export class Locator {
     return this.locator(
       this.locator('label')
         .getByText(text, options)
-        .collect()
+        .collectSync()
         .map((el: HTMLLabelElement) =>
           assertValue(this.page.document.getElementById(el.htmlFor)),
         ),
@@ -220,20 +248,21 @@ export class Locator {
   }
 
   nth(index: number) {
-    const results = this.collect();
+    const results = this.collectSync();
     if (index < 0) index = results.length + index;
     return new Locator(this.page, results.slice(index, index + 1));
   }
 
   parentElement() {
-    return this.locator([assertValue(this.unwrap()?.parentElement)]);
+    return this.locator([assertValue(this.unwrapSync()?.parentElement)]);
   }
 
   async doActionByTagName<T>(
     actions: Record<string, (el: Element) => T> &
       Record<'default', (el: Element) => T>,
+    options?: { timeout?: number },
   ) {
-    const element = assertValue(this.unwrap());
+    const element = assertValue(await this.unwrap(options));
     const action =
       actions[element.tagName.toLocaleLowerCase()] ?? actions.default;
     await this.page.slowdown();
@@ -242,39 +271,41 @@ export class Locator {
 
   // 'any' types are placeholders
   async fill(text: string, options?: any) {
-    await this.doActionByTagName({
-      input: (el) => {
-        (el as HTMLInputElement).value = text;
+    await this.doActionByTagName(
+      {
+        input: (el) => ((el as HTMLInputElement).value = text),
+        default: (el) => (assertValue(el.querySelector('input')).value = text),
       },
-      default: (el) => {
-        assertValue(el.querySelector('input')).value = text;
-      },
-    });
+      options,
+    );
   }
 
   async check(value: boolean = true, options?: any) {
-    await this.doActionByTagName({
-      input: (el) => {
-        (el as HTMLInputElement).checked = value;
+    await this.doActionByTagName(
+      {
+        input: (el) => ((el as HTMLInputElement).checked = value),
+        default: (el) =>
+          (assertValue(el.querySelector('input')).checked = true),
       },
-      default: (el) => {
-        assertValue(el.querySelector('input')).checked = true;
-      },
-    });
+      options,
+    );
   }
 
-  async focus() {
-    await this.doActionByTagName({
-      default: (el) => {
-        el.dispatchEvent(
-          new FocusEvent('focus', {
-            view: window,
-            bubbles: true,
-            cancelable: true,
-          }),
-        );
+  async focus(options?: any) {
+    await this.doActionByTagName(
+      {
+        default: (el) => {
+          el.dispatchEvent(
+            new FocusEvent('focus', {
+              view: window,
+              bubbles: true,
+              cancelable: true,
+            }),
+          );
+        },
       },
-    });
+      options,
+    );
   }
 
   async uncheck(options?: any) {
@@ -282,26 +313,32 @@ export class Locator {
   }
 
   async click(options?: ElementHandleClickOptions) {
-    await this.doActionByTagName({
-      default: (el) =>
-        el.dispatchEvent(
-          new MouseEvent(
-            'click',
-            mouseEventFromClickOptionsWithPosition(el, options),
+    await this.doActionByTagName(
+      {
+        default: (el) =>
+          el.dispatchEvent(
+            new MouseEvent(
+              'click',
+              mouseEventFromClickOptionsWithPosition(el, options),
+            ),
           ),
-        ),
-    });
+      },
+      options,
+    );
   }
 
   async dblclick(options?: any) {
-    await this.doActionByTagName({
-      default: (el) =>
-        el.dispatchEvent(
-          new MouseEvent(
-            'dblclick',
-            mouseEventFromClickOptionsWithPosition(el, options),
+    await this.doActionByTagName(
+      {
+        default: (el) =>
+          el.dispatchEvent(
+            new MouseEvent(
+              'dblclick',
+              mouseEventFromClickOptionsWithPosition(el, options),
+            ),
           ),
-        ),
-    });
+      },
+      options,
+    );
   }
 }
