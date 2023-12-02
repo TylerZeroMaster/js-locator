@@ -5,7 +5,7 @@ import {
   LocatorOptions,
   ModifierKeys,
 } from './types';
-import { filter, observe, waitFor } from './utils';
+import { filter, waitFor } from './utils';
 import { createTextMatcher } from './utils';
 import { assertValue } from './utils';
 
@@ -183,7 +183,7 @@ export class Locator {
     if (options?.timeout === undefined) {
       return Array.from(this.valueRaw);
     } else {
-      let result = Array.from(this.copy().valueRaw);
+      const result = Array.from(this.copy().valueRaw);
       return result.length !== 0
         ? result
         : waitFor(
@@ -270,7 +270,7 @@ export class Locator {
   }
 
   // 'any' types are placeholders
-  async fill(text: string, options?: any) {
+  async fill(text: string, options?: { timeout?: number }) {
     await this.doActionByTagName(
       {
         input: (el) => ((el as HTMLInputElement).value = text),
@@ -280,7 +280,7 @@ export class Locator {
     );
   }
 
-  async check(value: boolean = true, options?: any) {
+  async check(value: boolean = true, options?: { timeout?: number }) {
     await this.doActionByTagName(
       {
         input: (el) => ((el as HTMLInputElement).checked = value),
@@ -291,7 +291,7 @@ export class Locator {
     );
   }
 
-  async focus(options?: any) {
+  async focus(options?: { timeout?: number }) {
     await this.doActionByTagName(
       {
         default: (el) => {
@@ -308,7 +308,7 @@ export class Locator {
     );
   }
 
-  async uncheck(options?: any) {
+  async uncheck(options?: { timeout?: number }) {
     await this.check(false, options);
   }
 
@@ -327,7 +327,7 @@ export class Locator {
     );
   }
 
-  async dblclick(options?: any) {
+  async dblclick(options?: { timeout?: number }) {
     await this.doActionByTagName(
       {
         default: (el) =>

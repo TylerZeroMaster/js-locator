@@ -12,7 +12,7 @@ export class Page {
   ) {
     this.slowdown =
       options?.slowmo !== undefined
-        ? () => new Promise((res, rej) => setTimeout(res, options.slowmo))
+        ? () => new Promise((res) => setTimeout(res, options.slowmo))
         : () => Promise.resolve();
   }
 

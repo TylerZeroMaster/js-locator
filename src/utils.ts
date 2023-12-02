@@ -56,24 +56,22 @@ export async function waitFor<T>(
   node: Node,
   callbackFactory: (
     resolve: (value: T) => void,
-    reject: (reason?: any) => void,
+    reject: (reason?: unknown) => void,
   ) => (mutations: MutationRecord[], observer: MutationObserver) => void,
   timeout: number,
   options?: MutationObserverInit,
 ): Promise<T> {
   return new Promise(function (oresolve, oreject) {
-    let timeoutId: NodeJS.Timeout;
-    let disconnect: () => void;
     const resolve = (value: T) => {
       clearTimeout(timeoutId);
       disconnect();
       oresolve(value);
     };
-    const reject = (reason?: any) => {
+    const reject = (reason?: unknown) => {
       disconnect();
       oreject(reason);
     };
-    disconnect = observe(node, callbackFactory(resolve, reject), options);
-    timeoutId = setTimeout(() => reject(new Error('Timeout')), timeout);
+    const disconnect = observe(node, callbackFactory(resolve, reject), options);
+    const timeoutId = setTimeout(() => reject(new Error('Timeout')), timeout);
   });
 }
