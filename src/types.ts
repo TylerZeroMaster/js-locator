@@ -21,6 +21,7 @@ export type LocatorOptions = {
 
 export type PageOptions = {
   slowmo?: number;
+  document?: Document;
 };
 
 export type Point = {

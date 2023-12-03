@@ -42,7 +42,7 @@ describe('Locator', () => {
         el.setAttribute('data-value', el.id);
       }
     });
-    page = new Page({}, document);
+    page = new Page({ document });
   });
   describe('basic selector tests', () => {
     it('gets elements by id', () => {
@@ -235,7 +235,7 @@ describe('Locator', () => {
   });
   describe('page slowmo', () => {
     it('waits the specified time', async () => {
-      const pageWithSlowmo = new Page({ slowmo: 200 }, document);
+      const pageWithSlowmo = new Page({ slowmo: 200, document });
       const el = pageWithSlowmo.locator('#check-action-test').unwrapSync();
       expect(el).toBeDefined();
       const input = el as HTMLInputElement;
@@ -253,9 +253,12 @@ describe('Locator', () => {
     it('gets the content after a delay', async () => {
       const parser = new DOMParser();
       const doc = parser.parseFromString('', 'text/html');
-      const page = new Page({}, doc);
+      const page = new Page({ document: doc });
       const end = Date.now() + 100;
       new Promise((res) => setTimeout(res, 200)).then(() => {
+        // Trigger one mutation
+        doc.body.innerHTML = '<div>Loading...</div>';
+        // Trigger second mutation
         doc.body.innerHTML = document.body.innerHTML;
       });
       const input = await page
@@ -268,6 +271,19 @@ describe('Locator', () => {
       expect(input?.matches('input')).toBe(true);
       expect(input?.id).toBe('label-test-id');
       expect(Date.now()).toBeGreaterThan(end);
+    });
+    it('gets the content without delay', async () => {
+      const end = Date.now() + 100;
+      const input = await page
+        .locator('form')
+        .getByLabel('Label Test')
+        .locator('input')
+        .nth(0)
+        .unwrap({ timeout: 1000 });
+      expect(input).toBeDefined();
+      expect(input?.matches('input')).toBe(true);
+      expect(input?.id).toBe('label-test-id');
+      expect(Date.now()).toBeLessThan(end);
     });
     it('times out', async () => {
       await expect(async () => {

@@ -4,16 +4,14 @@ import { iterTree } from './utils';
 
 export class Page {
   public readonly slowdown: () => Promise<void>;
+  public readonly document: Document;
 
-  constructor(
-    options?: PageOptions,
-    /* istanbul ignore next */
-    public readonly document = window.document,
-  ) {
+  constructor(options?: PageOptions) {
     this.slowdown =
       options?.slowmo !== undefined
         ? () => new Promise((res) => setTimeout(res, options.slowmo))
         : () => Promise.resolve();
+    this.document = options?.document ?? window.document;
   }
 
   locator(selector: string | (() => Iterable<Element>)) {
