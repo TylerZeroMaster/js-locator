@@ -1,5 +1,6 @@
 import { Locator } from './locator';
 import { ByRoleOptions, PageOptions } from './types';
+import { iterTree } from './utils';
 
 export class Page {
   public readonly slowdown: () => Promise<void>;
@@ -19,8 +20,12 @@ export class Page {
     return new Locator(this, selector);
   }
 
+  all() {
+    return new Locator(this, () => iterTree(this.document));
+  }
+
   getByText(text: string | RegExp, options?: { exact?: boolean }): Locator {
-    return this.locator('*').getByText(text, options);
+    return this.all().getByText(text, options);
   }
 
   getByLabel(text: string | RegExp, options?: { exact?: boolean }): Locator {
@@ -28,6 +33,6 @@ export class Page {
   }
 
   getByRole(role: string, options: ByRoleOptions = {}): Locator {
-    return this.locator('*').getByRole(role, options);
+    return this.all().getByRole(role, options);
   }
 }

@@ -80,3 +80,12 @@ export async function waitFor<T>(
     const timeoutId = setTimeout(() => reject(new Error('Timeout')), timeout);
   });
 }
+
+export function* iterTree(document: Document, root?: Node) {
+  const walker = document.createTreeWalker(
+    root ?? document.body,
+    NodeFilter.SHOW_ELEMENT,
+  );
+  let node: Node | null;
+  while ((node = walker.nextNode()) != null) yield node as Element;
+}

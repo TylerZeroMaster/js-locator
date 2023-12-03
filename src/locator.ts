@@ -48,10 +48,12 @@ function getByTextSelector(
   text: string | RegExp,
   options?: { exact?: boolean },
 ) {
-  return filter(
-    elements,
-    createTextMatcher(text, (el: Element) => el.textContent, options),
-  );
+  const getImmediateText = (el: Element) =>
+    [...el.childNodes]
+      .filter((n) => n.nodeType === Node.TEXT_NODE)
+      .map((n) => n.textContent)
+      .join('');
+  return filter(elements, createTextMatcher(text, getImmediateText, options));
 }
 
 function getByRoleSelector(
@@ -171,7 +173,7 @@ export class Locator {
   }
 
   collectSync(): Element[] {
-    return Array.from(this.valueRaw);
+    return [...this.valueRaw];
   }
 
   async collect(options?: { timeout?: number }): Promise<Element[]> {

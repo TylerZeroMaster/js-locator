@@ -82,10 +82,8 @@ describe('Locator', () => {
       expect(byText?.id).toBe('get-by-text');
     });
     it('gets elements by partial text', () => {
-      // Inexact text search gives all parents. The last one is the most specific.
       const byText = page
         .getByText('no other element should contain')
-        .last()
         .unwrapSync();
       expect(byText).toBeDefined();
       expect(byText?.id).toBe('get-by-text');
