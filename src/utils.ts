@@ -45,9 +45,8 @@ export function observe(
   ) => boolean | void,
   options?: MutationObserverInit,
 ): () => void {
-  const observer = new MutationObserver((mutations, ob) => {
-    const result = callback(mutations, ob);
-    if (result) disconnect();
+  const observer = new MutationObserver((mutations, obs) => {
+    if (callback(mutations, obs) === true) disconnect();
   });
   observer.observe(node, {
     childList: true,
@@ -63,7 +62,7 @@ export async function waitFor<T>(
   callbackFactory: (
     resolve: (value: T) => void,
     reject: (reason?: unknown) => void,
-  ) => (mutations: MutationRecord[], observer: MutationObserver) => void,
+  ) => (mutations: MutationRecord[], obs: MutationObserver) => void,
   timeout: number,
   options?: MutationObserverInit,
 ): Promise<T> {
