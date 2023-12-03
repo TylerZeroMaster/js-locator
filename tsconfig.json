@@ -7,6 +7,6 @@
     "strictNullChecks": true,
     "noImplicitAny": true
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules/*", "out"]
+  "include": ["src/**/*.ts", "tests/**/*.ts"],
+  "exclude": ["**node_modules", "**out"]
 }

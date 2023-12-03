@@ -5,7 +5,7 @@ import {
   LocatorOptions,
   ModifierKeys,
 } from './types';
-import { filter, waitFor } from './utils';
+import { filter, map, waitFor } from './utils';
 import { createTextMatcher } from './utils';
 import { assertValue } from './utils';
 
@@ -97,6 +97,9 @@ function getByRoleSelector(
 
 function* mapSelector(elements: Iterable<Element>, selector: string) {
   for (const el of elements) {
+    if (el.matches(selector)) {
+      yield el;
+    }
     for (const child of el.querySelectorAll(selector)) {
       yield child;
     }
@@ -222,12 +225,14 @@ export class Locator {
 
   getByLabel(text: string | RegExp, options?: { exact?: boolean }): Locator {
     return this.locator(
-      this.locator('label')
-        .getByText(text, options)
-        .collectSync()
-        .map((el: HTMLLabelElement) =>
-          assertValue(this.page.document.getElementById(el.htmlFor)),
+      map(
+        filter(
+          this.locator('label').valueRaw,
+          createTextMatcher(text, (el) => el.textContent, options),
         ),
+        (el: HTMLLabelElement) =>
+          assertValue(this.page.document.getElementById(el.htmlFor)),
+      ),
     );
   }
 

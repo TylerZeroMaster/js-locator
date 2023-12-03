@@ -1,6 +1,5 @@
 import { Locator } from './locator';
 import { ByRoleOptions, PageOptions } from './types';
-import { assertValue } from './utils';
 
 export class Page {
   public readonly slowdown: () => Promise<void>;
@@ -25,14 +24,7 @@ export class Page {
   }
 
   getByLabel(text: string | RegExp, options?: { exact?: boolean }): Locator {
-    return this.locator(
-      this.locator('label')
-        .getByText(text, options)
-        .collectSync()
-        .map((el: HTMLLabelElement) =>
-          assertValue(this.document.getElementById(el.htmlFor)),
-        ),
-    );
+    return this.locator('label').getByLabel(text, options);
   }
 
   getByRole(role: string, options: ByRoleOptions = {}): Locator {

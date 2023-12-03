@@ -23,6 +23,12 @@ export function createTextMatcher<T>(
   }
 }
 
+export function* map<T, R>(it: Iterable<T>, cb: (x: T) => R) {
+  for (const x of it) {
+    yield cb(x);
+  }
+}
+
 export function* filter<T>(it: Iterable<T>, condition: (x: T) => boolean) {
   for (const x of it) {
     if (condition(x)) {
