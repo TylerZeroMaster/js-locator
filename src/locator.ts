@@ -46,12 +46,14 @@ function getByTextSelector(
   text: string | RegExp,
   options?: { exact?: boolean },
 ) {
-  const getImmediateText = (el: Element) =>
-    [...el.childNodes]
-      .filter((n) => n.nodeType === Node.TEXT_NODE)
-      .map((n) => n.textContent)
-      .join('');
-  return filter(elements, createTextMatcher(text, getImmediateText, options));
+  return filter(
+    elements,
+    createTextMatcher(
+      text,
+      (el: HTMLElement) => el.innerText ?? el.textContent,
+      options,
+    ),
+  );
 }
 
 function getByRoleSelector(
