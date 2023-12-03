@@ -69,6 +69,11 @@ describe('Locator', () => {
       expect(input?.tagName.toLocaleLowerCase()).toBe('input');
       expect(input?.id).toBe('by-role-test');
     });
+    it('returns empty when parent is absent', () => {
+      expect(
+        page.locator('no-match').parentElement().collectSync(),
+      ).toStrictEqual([]);
+    });
   });
   describe('more advanced selectors', () => {
     it('gets elements by exact text', () => {
