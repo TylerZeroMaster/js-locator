@@ -15,7 +15,7 @@ export class Page {
         : () => Promise.resolve();
   }
 
-  locator(selector: string | Iterable<Element>) {
+  locator(selector: string | (() => Iterable<Element>)) {
     return new Locator(this, selector);
   }
 

@@ -65,7 +65,7 @@ function getByRoleSelector(
     role,
     // According to https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles
     // inputs should get their type as a role by default, but this does not seem to actually happen...
-    (el: Element) => el.getAttribute('role') || el.getAttribute('type'),
+    (el: Element) => el.getAttribute('role') ?? el.getAttribute('type'),
     options,
   );
   return filter(elements, (el) => {
@@ -117,10 +117,6 @@ function mouseEventFromClickOptions(
     middle: 1,
   };
   /* istanbul ignore next */
-  if (options?.timeout !== undefined) {
-    logger.warn('timeout option not supported');
-  }
-  /* istanbul ignore next */
   if (options?.force !== undefined) {
     logger.warn('force option not supported');
   }
@@ -154,7 +150,7 @@ function mouseEventFromClickOptionsWithPosition(
 export class Locator {
   constructor(
     private readonly page: Page,
-    private readonly selector: string | Iterable<Element>,
+    private readonly selector: string | (() => Iterable<Element>),
     private readonly root: Document | Element = page.document,
   ) {}
 
@@ -166,12 +162,8 @@ export class Locator {
     if (typeof this.selector === 'string') {
       return this.root.querySelectorAll(this.selector);
     } else {
-      return this.selector;
+      return this.selector();
     }
-  }
-
-  private copy() {
-    return new Locator(this.page, this.selector, this.root);
   }
 
   unwrapSync(): Element | undefined {
@@ -184,15 +176,15 @@ export class Locator {
 
   async collect(options?: { timeout?: number }): Promise<Element[]> {
     if (options?.timeout === undefined) {
-      return Array.from(this.valueRaw);
+      return this.collectSync();
     } else {
-      const result = Array.from(this.copy().valueRaw);
+      const result = this.collectSync();
       return result.length !== 0
         ? result
         : waitFor(
             this.root,
             (resolve) => () => {
-              const result = Array.from(this.copy().valueRaw);
+              const result = this.collectSync();
               if (result.length !== 0) {
                 resolve(result);
               }
@@ -207,24 +199,24 @@ export class Locator {
   }
 
   locator(
-    selectorOrIterable: string | Iterable<Element>,
+    selectorOrFunc: string | (() => Iterable<Element>),
     root: Document | Element = this.page.document,
   ): Locator {
     return new Locator(
       this.page,
-      typeof selectorOrIterable === 'string'
-        ? mapSelector(this.valueRaw, selectorOrIterable)
-        : selectorOrIterable,
+      typeof selectorOrFunc === 'string'
+        ? () => mapSelector(this.valueRaw, selectorOrFunc)
+        : selectorOrFunc,
       root,
     );
   }
 
   getByText(text: string | RegExp, options?: { exact?: boolean }): Locator {
-    return this.locator(getByTextSelector(this.valueRaw, text, options));
+    return this.locator(() => getByTextSelector(this.valueRaw, text, options));
   }
 
   getByLabel(text: string | RegExp, options?: { exact?: boolean }): Locator {
-    return this.locator(
+    return this.locator(() =>
       map(
         filter(
           this.locator('label').valueRaw,
@@ -237,11 +229,11 @@ export class Locator {
   }
 
   getByRole(role: string, options: ByRoleOptions = {}): Locator {
-    return this.locator(getByRoleSelector(this.valueRaw, role, options));
+    return this.locator(() => getByRoleSelector(this.valueRaw, role, options));
   }
 
   filter(options: LocatorOptions) {
-    return this.locator(filterSelector(this.valueRaw, options));
+    return this.locator(() => filterSelector(this.valueRaw, options));
   }
 
   first() {
@@ -253,13 +245,18 @@ export class Locator {
   }
 
   nth(index: number) {
-    const results = this.collectSync();
-    if (index < 0) index = results.length + index;
-    return new Locator(this.page, results.slice(index, index + 1));
+    return new Locator(this.page, () => {
+      const results = this.collectSync();
+      if (index < 0) index = results.length + index;
+      return results.slice(index, index + 1);
+    });
   }
 
   parentElement() {
-    return this.locator([assertValue(this.unwrapSync()?.parentElement)]);
+    return this.locator(() => {
+      const parent = this.unwrapSync()?.parentElement;
+      return parent != null ? [parent] : [];
+    });
   }
 
   async doActionByTagName<T>(
@@ -274,7 +271,6 @@ export class Locator {
     return action(element);
   }
 
-  // 'any' types are placeholders
   async fill(text: string, options?: { timeout?: number }) {
     await this.doActionByTagName(
       {

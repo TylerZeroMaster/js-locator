@@ -251,4 +251,32 @@ describe('Locator', () => {
       expect(Date.now() - start).toBeGreaterThan(100);
     });
   });
+  describe('async', () => {
+    it('gets the content after a delay', async () => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString('', 'text/html');
+      const page = new Page({}, doc);
+      const end = Date.now() + 100;
+      new Promise((res) => setTimeout(res, 200)).then(() => {
+        doc.body.innerHTML = document.body.innerHTML;
+      });
+      const input = await page
+        .locator('form')
+        .getByLabel('Label Test')
+        .locator('input')
+        .nth(0)
+        .unwrap({ timeout: 1000 });
+      expect(input).toBeDefined();
+      expect(input?.matches('input')).toBe(true);
+      expect(input?.id).toBe('label-test-id');
+      expect(Date.now()).toBeGreaterThan(end);
+    });
+    it('times out', async () => {
+      await expect(async () => {
+        await page
+          .locator('test-this-should-not-match')
+          .collect({ timeout: 10 });
+      }).rejects.toThrow(/Timeout/i);
+    });
+  });
 });
