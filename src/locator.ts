@@ -3,13 +3,11 @@ import {
   ByRoleOptions,
   ElementHandleClickOptions,
   LocatorOptions,
-  ModifierKeys,
 } from './types';
+import { mouseEventFromClickOptionsWithPosition } from './utils';
 import { filter, map, waitFor } from './utils';
 import { createTextMatcher } from './utils';
 import { assertValue } from './utils';
-
-const logger = console;
 
 function filterSelector(elements: Iterable<Element>, options: LocatorOptions) {
   let filtered = elements;
@@ -106,47 +104,6 @@ function* mapSelector(elements: Iterable<Element>, selector: string) {
       yield child;
     }
   }
-}
-
-function mouseEventFromClickOptions(
-  options?: ElementHandleClickOptions,
-): MouseEventInit {
-  const modifiers: Partial<Record<ModifierKeys, boolean>> = {};
-  options?.modifiers?.forEach((mod) => (modifiers[mod] = true));
-  const buttonsByName = {
-    left: 0,
-    right: 2,
-    middle: 1,
-  };
-  /* istanbul ignore next */
-  if (options?.force !== undefined) {
-    logger.warn('force option not supported');
-  }
-  return {
-    view: window,
-    bubbles: true,
-    cancelable: true,
-    altKey: !!modifiers.Alt,
-    ctrlKey: !!modifiers.Control,
-    metaKey: !!modifiers.Meta,
-    shiftKey: !!modifiers.Shift,
-    button: buttonsByName[options?.button ?? 'left'],
-    clientX: 0,
-    clientY: 0,
-    detail: options?.clickCount ?? 1,
-  };
-}
-
-function mouseEventFromClickOptionsWithPosition(
-  el: Element,
-  options?: ElementHandleClickOptions,
-): MouseEventInit {
-  const box = el.getBoundingClientRect();
-  return {
-    ...mouseEventFromClickOptions(options),
-    clientX: box.x + (options?.position?.x ?? 0),
-    clientY: box.y + (options?.position?.y ?? 0),
-  };
 }
 
 export class Locator {

@@ -1,3 +1,7 @@
+import { ElementHandleClickOptions, ModifierKeys } from './types';
+
+const logger = console;
+
 export function assertValue<T>(
   value: T | undefined | null,
   message: string = 'Expected value, got nothing',
@@ -88,4 +92,45 @@ export function* iterTree(document: Document, root?: Node) {
   );
   let node: Node | null;
   while ((node = walker.nextNode()) != null) yield node as Element;
+}
+
+export function mouseEventFromClickOptions(
+  options?: ElementHandleClickOptions,
+): MouseEventInit {
+  const modifiers: Partial<Record<ModifierKeys, boolean>> = {};
+  options?.modifiers?.forEach((mod) => (modifiers[mod] = true));
+  const buttonsByName = {
+    left: 0,
+    right: 2,
+    middle: 1,
+  };
+  /* istanbul ignore next */
+  if (options?.force !== undefined) {
+    logger.warn('force option not supported');
+  }
+  return {
+    view: window,
+    bubbles: true,
+    cancelable: true,
+    altKey: !!modifiers.Alt,
+    ctrlKey: !!modifiers.Control,
+    metaKey: !!modifiers.Meta,
+    shiftKey: !!modifiers.Shift,
+    button: buttonsByName[options?.button ?? 'left'],
+    clientX: 0,
+    clientY: 0,
+    detail: options?.clickCount ?? 1,
+  };
+}
+
+export function mouseEventFromClickOptionsWithPosition(
+  el: Element,
+  options?: ElementHandleClickOptions,
+): MouseEventInit {
+  const box = el.getBoundingClientRect();
+  return {
+    ...mouseEventFromClickOptions(options),
+    clientX: box.x + (options?.position?.x ?? 0),
+    clientY: box.y + (options?.position?.y ?? 0),
+  };
 }
