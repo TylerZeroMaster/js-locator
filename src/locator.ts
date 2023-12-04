@@ -110,16 +110,16 @@ function* mapSelector(elements: Iterable<Element>, selector: string) {
 
 export class Locator {
   constructor(
-    private readonly page: Page,
-    private readonly selector: string | (() => Iterable<Element>),
-    private readonly root: Document | Element = page.document,
+    protected readonly page: Page,
+    protected readonly selector: string | (() => Iterable<Element>),
+    protected readonly root: Document | Element = page.document,
   ) {}
 
   withRoot(root: Document | Element) {
     return new Locator(this.page, this.selector, root);
   }
 
-  private get valueRaw(): Iterable<Element> {
+  protected get valueRaw(): Iterable<Element> {
     if (typeof this.selector === 'string') {
       return this.root.querySelectorAll(this.selector);
     } else {
@@ -220,7 +220,7 @@ export class Locator {
     });
   }
 
-  async doActionByTagName<T>(
+  protected async doActionByTagName<T>(
     actions: Record<string, (el: Element) => T> &
       Record<'default', (el: Element) => T>,
     options?: { timeout?: number },
