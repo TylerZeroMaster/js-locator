@@ -1,12 +1,12 @@
 {
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "target": "ES6",
-    "module": "CommonJS",
-    "outDir": "out",
-    "sourceMap": true,
-    "strictNullChecks": true,
-    "noImplicitAny": true
+    "module": "ES6",
+    "moduleResolution": "Bundler",
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "types"
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts"],
-  "exclude": ["**node_modules", "**out"]
+  "exclude": ["tests/**/*.ts"]
 }

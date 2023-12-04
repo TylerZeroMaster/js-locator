@@ -1,2 +1,6 @@
 .eslintrc.cjs
-**out
+**dist
+**types
+**/*.config.mjs
+**/coverage/
+.*
